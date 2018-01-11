@@ -7,7 +7,7 @@ import './css/open-sans.css'
 import './css/pure-min.css'
 import './App.css'
 
-var fantasyInstance, teamsList
+var fantasyInstance, teamsList;
 
 class App extends Component {
 
@@ -18,13 +18,15 @@ class App extends Component {
       kittVal: 0,
       storageValue: 0,
       web3: null,
-      accounts: null,
+      account: null,
       teams: [],
       teamName: ""
     }
 
-    this.handlePayment = this.handlePayment.bind(this)
-    this.handleChange = this.handleChange.bind(this)
+    this.instantiateContract = this.instantiateContract.bind(this);
+    this.handlePayment = this.handlePayment.bind(this);
+    this.componentWillMount = this.componentWillMount.bind(this);
+    this.handleChange = this.handleChange.bind(this);
   }
 
   componentWillMount() {
@@ -37,19 +39,24 @@ class App extends Component {
         web3: results.web3
       })
 
-      console.log(results.web3);
-      console.log(results.web3.eth);
-
-
+      console.log(this.state.web3)
       var web3 = this.state.web3
-      console.log("Get Accs");
-      console.log(web3.eth.getAccounts().then());
-      this.setState({ accounts: web3.eth.accounts})
-      console.log(web3.eth.accounts);
+
+      web3.eth.getAccounts((err, res) => {
+        this.setState({account: res[0]}); 
+      })
+
+      //Sadly, this is the only way I can ensure the account variable detects a metamask account change, but this doesn't seem efficient
+      setInterval(() => {
+        web3.eth.getAccounts((err, res) => {
+          if(res[0] !== this.state.account)
+            this.setState({account: res[0]}); 
+        })
+      }, 100)
 
       // Instantiate contract once web3 provided.
       this.instantiateContract()
-    })
+    })  
     .catch((err) => {
       console.log('Error finding web3.')
       console.log(err);
@@ -79,7 +86,7 @@ class App extends Component {
 
     console.log("in get Vars");
 
-    var val = await fantasyInstance.getKittyValue.call(this.state.accounts[0]);
+    var val = await fantasyInstance.getKittyValue.call();
     this.setState({kittVal: val.c[0]})
     console.log(this.state.kittVal);
 
@@ -150,4 +157,12 @@ class App extends Component {
               <p>Teams</p>
               <ul>{teamsList}</ul>
 
-            </div
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+}
+
+export default App
